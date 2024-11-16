@@ -35,5 +35,20 @@ namespace ChallengerTest.Repositories.Command
                 throw new Exception($"Error indexing permission in Elasticsearch: {response.OriginalException.Message}");
             }
         }
+
+        public async Task UpdatePermissionAsync(Permission permission)
+        {
+            // Actualizar en la base de datos SQL Server
+            _context.Permissions.Update(permission);
+            await _context.SaveChangesAsync();
+
+            // Actualizar en Elasticsearch
+            var response = await _elasticClient.IndexDocumentAsync(permission);  // Indexa el permiso actualizado
+
+            if (!response.IsValid)
+            {
+                throw new Exception($"Error updating permission in Elasticsearch: {response.OriginalException.Message}");
+            }
+        }
     }
 }

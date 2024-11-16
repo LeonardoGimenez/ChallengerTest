@@ -58,5 +58,35 @@ namespace ChallengerTest.Controllers
                 return StatusCode(500, $"Error processing permission request: {ex.Message}");
             }
         }
+
+        // PUT: api/permissions/modify/{id}
+        [HttpPut("modify/{id}")]
+        public async Task<IActionResult> ModifyPermission(int id, [FromBody] Permission updatedPermission)
+        {
+            try
+            {
+                // Verificar si el registro del id existe
+                var existingPermission = await _permissionQueryRepository.GetPermissionByIdAsync(id);
+                if (existingPermission == null)
+                {
+                    return NotFound($"Permission with ID {id} not found.");
+                }
+
+                // Actualizar el registro con el id solicitado con los nuevos datos
+                existingPermission.EmployeeForename = updatedPermission.EmployeeForename;
+                existingPermission.EmployeeSurname = updatedPermission.EmployeeSurname;
+                existingPermission.PermissionType = updatedPermission.PermissionType;
+                existingPermission.PermissionDate = updatedPermission.PermissionDate;
+
+                // Actualiza en la base de datos y en Elasticsearch
+                await _permissionCommandRepository.UpdatePermissionAsync(existingPermission);
+
+                return Ok("Permission updated successfully");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error updating permission: {ex.Message}");
+            }
+        }
     }
 }
