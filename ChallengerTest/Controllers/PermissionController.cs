@@ -1,7 +1,10 @@
 ﻿using ChallengerTest.Models;
-using ChallengerTest.Repositories;
-using ChallengerTest.Services;
+using ChallengerTest.Repositories.Command;
+using ChallengerTest.Repositories.Query;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ChallengerTest.Controllers
 {
@@ -9,31 +12,51 @@ namespace ChallengerTest.Controllers
     [ApiController]
     public class PermissionsController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IElasticsearchService _elasticsearchService;
+        private readonly IPermissionQueryRepository _permissionQueryRepository;
+        private readonly IPermissionCommandRepository _permissionCommandRepository;
 
-        public PermissionsController(IUnitOfWork unitOfWork, IElasticsearchService elasticsearchService)
+        public PermissionsController(
+            IPermissionQueryRepository permissionQueryRepository,
+            IPermissionCommandRepository permissionCommandRepository)
         {
-            _unitOfWork = unitOfWork;
-            _elasticsearchService = elasticsearchService;
+            _permissionQueryRepository = permissionQueryRepository;
+            _permissionCommandRepository = permissionCommandRepository;
         }
 
+        // GET: api/permissions/get
+        [HttpGet("get")]
+        public async Task<IActionResult> GetPermissions()
+        {
+            try
+            {
+                var permissions = await _permissionQueryRepository.GetPermissionsAsync();
+                return Ok(permissions);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving permissions: {ex.Message}");
+            }
+        }
+
+        // POST: api/permissions/request
         [HttpPost("request")]
         public async Task<IActionResult> RequestPermission([FromBody] Permission permission)
         {
-            if (permission == null)
+            try
             {
-                return BadRequest("Invalid data.");
+                // Se guarda en la base de datos
+                await _permissionCommandRepository.AddPermissionAsync(permission);
+                await _permissionCommandRepository.SaveAsync();
+
+                // Se indexa en Elasticsearch
+                await _permissionCommandRepository.IndexPermissionAsync(permission);
+
+                return Ok("Permission requested successfully");
             }
-
-            // Persistir en SQL Server
-            await _unitOfWork.Permissions.AddPermissionAsync(permission);
-            await _unitOfWork.SaveAsync();
-
-            // Persistir en Elasticsearch
-            await _elasticsearchService.IndexPermissionAsync(permission);
-
-            return Ok(permission);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error processing permission request: {ex.Message}");
+            }
         }
     }
 }

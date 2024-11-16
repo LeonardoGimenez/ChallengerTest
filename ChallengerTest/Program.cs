@@ -7,6 +7,8 @@
 //builder.Services.AddOpenApi();
 using ChallengerTest.Data;
 using ChallengerTest.Repositories;
+using ChallengerTest.Repositories.Command;
+using ChallengerTest.Repositories.Query;
 using ChallengerTest.Services;
 using Microsoft.EntityFrameworkCore;
 using Nest; // Cliente de Elasticsearch
@@ -20,6 +22,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Registrar repositorios y Unit of Work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IPermissionRepository, PermissionRepository>();
+builder.Services.AddScoped<IPermissionQueryRepository, PermissionQueryRepository>();
+builder.Services.AddScoped<IPermissionCommandRepository, PermissionCommandRepository>();
 
 // Configurar Elasticsearch
 var settings = new ConnectionSettings(new Uri("http://localhost:9200")).DefaultIndex("permissions");
