@@ -25,5 +25,4 @@ namespace ChallengerTest.Repositories
             await _context.SaveChangesAsync();
         }
     }
-
 }
