@@ -39,7 +39,8 @@ namespace ChallengerTest.Controllers
             {
                 _logger.LogInformation("Inicio de Get Permissions...");
                 var permissions = await _permissionQueryRepository.GetPermissionsAsync();
-                _logger.LogInformation("Fin de Get Permissions...");
+
+                _logger.LogInformation("Se envia mensaje a Kafka.");
 
                 // Enviar mensaje a Kafka
                 var message = new OperationMessage
@@ -48,6 +49,8 @@ namespace ChallengerTest.Controllers
                     NameOperation = "get"
                 };
                 await _kafkaProducer.SendMessageAsync(message);
+
+                _logger.LogInformation("Fin de Get Permissions...");
 
                 return Ok(permissions);
             }
@@ -72,7 +75,18 @@ namespace ChallengerTest.Controllers
                 // Se indexa en Elasticsearch
                 await _permissionCommandRepository.IndexPermissionAsync(permission);
 
+                _logger.LogInformation("Se envia mensaje a Kafka.");
+
+                // Enviar mensaje a Kafka
+                var message = new OperationMessage
+                {
+                    Id = Guid.NewGuid(),
+                    NameOperation = "request"
+                };
+                await _kafkaProducer.SendMessageAsync(message);
+
                 _logger.LogInformation("Fin de RequestPermission.");
+
                 return Ok("Permission requested successfully");
             }
             catch (Exception ex)
@@ -106,7 +120,18 @@ namespace ChallengerTest.Controllers
                 // Actualiza en la base de datos y en Elasticsearch
                 await _permissionCommandRepository.UpdatePermissionAsync(existingPermission);
 
+                _logger.LogInformation("Se envia mensaje a Kafka.");
+
+                // Enviar mensaje a Kafka
+                var message = new OperationMessage
+                {
+                    Id = Guid.NewGuid(),
+                    NameOperation = "modify"
+                };
+                await _kafkaProducer.SendMessageAsync(message);
+
                 _logger.LogInformation("Fin de Modify Permission.");
+
                 return Ok("Permission updated successfully");
             }
             catch (Exception ex)
