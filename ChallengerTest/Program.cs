@@ -12,6 +12,7 @@ using ChallengerTest.Repositories.Query;
 using ChallengerTest.Services;
 using Microsoft.EntityFrameworkCore;
 using Nest; // Cliente de Elasticsearch
+using Serilog; 
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,21 @@ var settings = new ConnectionSettings(new Uri("http://localhost:9200")).DefaultI
 var elasticClient = new ElasticClient(settings);
 builder.Services.AddSingleton<IElasticClient>(elasticClient);
 builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
+
+// Configuración de Serilog
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext() // Agrega contexto como nombre de clase, método, etc.
+    .WriteTo.Console()       // Log a la consola
+    .WriteTo.File("logs/log-.txt", rollingInterval: RollingInterval.Day) // Log a archivos diarios
+    .WriteTo.Elasticsearch(new Serilog.Sinks.Elasticsearch.ElasticsearchSinkOptions(new Uri("http://localhost:9200"))
+    {
+        AutoRegisterTemplate = true,
+        IndexFormat = "logs-{0:yyyy.MM.dd}" // Índices por día
+    })
+    .CreateLogger();
+
+builder.Host.UseSerilog(); // Reemplaza el sistema de logs predeterminado por Serilog
+
 
 // Agregar servicios de controladores
 builder.Services.AddControllers();
