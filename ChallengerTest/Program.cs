@@ -8,6 +8,7 @@
 using ChallengerTest.Data;
 using ChallengerTest.Repositories;
 using ChallengerTest.Repositories.Command;
+using ChallengerTest.Repositories.Kafka;
 using ChallengerTest.Repositories.Query;
 using ChallengerTest.Services;
 using Microsoft.EntityFrameworkCore;
@@ -30,6 +31,9 @@ var settings = new ConnectionSettings(new Uri("http://localhost:9200")).DefaultI
 var elasticClient = new ElasticClient(settings);
 builder.Services.AddSingleton<IElasticClient>(elasticClient);
 builder.Services.AddScoped<IElasticsearchService, ElasticsearchService>();
+
+// Registrar KafkaProducer
+builder.Services.AddSingleton<KafkaProducer>();
 
 // Configuración de Serilog
 Log.Logger = new LoggerConfiguration()

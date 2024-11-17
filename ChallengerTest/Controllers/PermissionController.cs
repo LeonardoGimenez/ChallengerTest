@@ -1,5 +1,6 @@
 ﻿using ChallengerTest.Models;
 using ChallengerTest.Repositories.Command;
+using ChallengerTest.Repositories.Kafka;
 using ChallengerTest.Repositories.Query;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -16,15 +17,18 @@ namespace ChallengerTest.Controllers
         private readonly IPermissionQueryRepository _permissionQueryRepository;
         private readonly IPermissionCommandRepository _permissionCommandRepository;
         private readonly ILogger<PermissionsController> _logger;
+        private readonly KafkaProducer _kafkaProducer;
 
         public PermissionsController(
             IPermissionQueryRepository permissionQueryRepository,
             IPermissionCommandRepository permissionCommandRepository,
-            ILogger<PermissionsController> logger)
+            ILogger<PermissionsController> logger,
+            KafkaProducer kafkaProducer)
         {
             _permissionQueryRepository = permissionQueryRepository;
             _permissionCommandRepository = permissionCommandRepository;
             _logger = logger;
+            _kafkaProducer = kafkaProducer;
         }
 
         // GET: api/permissions/get
@@ -36,6 +40,15 @@ namespace ChallengerTest.Controllers
                 _logger.LogInformation("Inicio de Get Permissions...");
                 var permissions = await _permissionQueryRepository.GetPermissionsAsync();
                 _logger.LogInformation("Fin de Get Permissions...");
+
+                // Enviar mensaje a Kafka
+                var message = new OperationMessage
+                {
+                    Id = Guid.NewGuid(),
+                    NameOperation = "get"
+                };
+                await _kafkaProducer.SendMessageAsync(message);
+
                 return Ok(permissions);
             }
             catch (Exception ex)
